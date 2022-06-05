@@ -3,6 +3,8 @@ from requests_html import HTMLSession
 from bs4 import BeautifulSoup
 import pandas as pd
 import argparse
+from tabulate import tabulate
+
 
 # #Comment out these 3 lines and change the searchterm variable, if you do not wish to use argparse version
 # my_parser = argparse.ArgumentParser(description='Return BF Amazon Deals')
@@ -16,7 +18,7 @@ s = HTMLSession()
 dealslist =[]
 
 #url = 'https://www.amazon.co.uk/s?k=bin&i=black-friday'
-url = 'https://www.amazon.co.uk/s?k=car+simulator&crid=3U8RNQV3HC3O4&sprefix=car+sim%2Caps%2C334&ref=nb_sb_ss_ts-doa-p_1_7'
+url = 'https://www.amazon.co.uk/s?k=racing+simulator&crid=1WTSID86FSEHB&sprefix=racing+simulator%2Caps%2C128&ref=nb_sb_noss_2'
 
 class Session(object):
     def __init__(self):
@@ -64,17 +66,17 @@ class Session(object):
     def getdeals(self):
         print('getting deals')
         products = self.soup.find_all('div', {'data-component-type': 's-search-result'})
-        print(len(products))
-        i = 0
+        print ('There are ' + str(len(products)) + 'on this page')
+        nopricecount = 0
+        pricecount = 0
         for item in products:
-            i = i + 1
-            print(i)
             title = item.find('a', {'class': 'a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal'}).text.strip()
             short_title = item.find('a', {'class': 'a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal'}).text.strip()[:30]
             try:
                 saleprice = float(item.find_all('span', {'class': 'a-offscreen'})[0].text.replace('£','').replace(',','').strip())
+                pricecount +=1
             except:
-                print('Cant find any price')
+                nopricecount += 1
                 continue
             try:
                 oldprice = float(item.find_all('span', {'class': 'a-offscreen'})[1].text.replace('£','').replace(',','').strip())
@@ -97,15 +99,15 @@ class Session(object):
                 'stars': stars
                         }
             dealslist.append(saleitem)
-
-        #print(dealslist)
+        print('Ive found, ' + str(pricecount) + ' ...there were also ' + str(nopricecount) + ' with no prices')
+        print(len(dealslist))
         self.checkpage()
         return
     def sortresults(self):
         df = pd.DataFrame(dealslist)
         df['percentoff'] = 100 - ((df.saleprice / df.oldprice) * 100)
         df = df.sort_values(by=['percentoff'], ascending=False)
-        print(df.to_string())
+        print(tabulate(df, headers='keys'))
 
 
 
