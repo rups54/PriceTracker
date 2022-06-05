@@ -13,38 +13,43 @@ import argparse
 #
 # pd.set_option('display.max_columns', None)
 s = HTMLSession()
+dealslist =[]
 
-url = 'https://www.amazon.co.uk/s?k=bin'
+#url = 'https://www.amazon.co.uk/s?k=bin&i=black-friday'
+url = 'https://www.amazon.co.uk/s?k=car+simulator&crid=3U8RNQV3HC3O4&sprefix=car+sim%2Caps%2C334&ref=nb_sb_ss_ts-doa-p_1_7'
 
 class Session(object):
     def __init__(self):
         self.url = url
         self.getdata(url)
         self.dealslist = []
+        self.soup = ''
 
     def getdata(self, url):
         try:
             r = s.get(self.url)
             r.html.render(sleep=1)
-            soup = BeautifulSoup(r.html.html, 'html.parser')
+            self.soup = BeautifulSoup(r.html.html, 'html.parser')
         except:
             print('Something went wrong with loading the page' + e)
-        self.getdeals(soup)
+        self.getdeals()
 
-    def checkpage(self, soup):
-        npf = soup.find('div', {'class': 'a-section a-text-center s-pagination-container'})
+    def checkpage(self):
+        npf = self.soup.find('div', {'class': 'a-section a-text-center s-pagination-container'})
         if npf is None:
             print ('this is the only page')
             return
         else:
             print('there is more than one page')
             print('checking for the next page button')
-            nextbut = soup.find('a', {'class': 's-pagination-item s-pagination-next s-pagination-button s-pagination-separator'})
+            nextbut = self.soup.find('a', {'class': 's-pagination-item s-pagination-next s-pagination-button s-pagination-separator'})
             if nextbut is not None:
                 print('whoop next button is avail')
                 self.findnexturl(nextbut, True)
             elif nextbut is None:
                 print('next button isnt available')
+                print('going to sort out results')
+                self.sortresults()
             else:
                 print('not sure how i got here')
 
@@ -52,19 +57,26 @@ class Session(object):
         urlpart = nextbut['href']
         print(urlpart)
         self.url = 'https://www.amazon.co.uk' + urlpart
-        print(url)
+        print(self.url)
         if goto:
-            self.getdata(url)
+            self.getdata(self.url)
 
-    def getdeals(self, soup):
+    def getdeals(self):
         print('getting deals')
-        products = soup.find_all('div', {'data-component-type': 's-search-result'})
+        products = self.soup.find_all('div', {'data-component-type': 's-search-result'})
         print(len(products))
+        i = 0
         for item in products:
+            i = i + 1
+            print(i)
             title = item.find('a', {'class': 'a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal'}).text.strip()
             short_title = item.find('a', {'class': 'a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal'}).text.strip()[:30]
             try:
                 saleprice = float(item.find_all('span', {'class': 'a-offscreen'})[0].text.replace('£','').replace(',','').strip())
+            except:
+                print('Cant find any price')
+                continue
+            try:
                 oldprice = float(item.find_all('span', {'class': 'a-offscreen'})[1].text.replace('£','').replace(',','').strip())
             except:
                 oldprice = float(item.find('span', {'class': 'a-offscreen'}).text.replace('£','').replace(',','').strip())
@@ -76,17 +88,25 @@ class Session(object):
                 stars = item.find('a', {'class': 'a-popover-trigger a-declarative'}).text.strip()
             except:
                 stars = 'No ratings'
-        saleitem = {
-            'title': title,
-            'short_title': short_title,
-            'saleprice': saleprice,
-            'oldprice': oldprice,
-            'reviews': reviews,
-            'stars': stars
-                    }
-        self.dealslist.append(saleitem)
-        print(dealslist)
+            saleitem = {
+                'title': title,
+                'short_title': short_title,
+                'saleprice': saleprice,
+                'oldprice': oldprice,
+                'reviews': reviews,
+                'stars': stars
+                        }
+            dealslist.append(saleitem)
+
+        #print(dealslist)
+        self.checkpage()
         return
+    def sortresults(self):
+        df = pd.DataFrame(dealslist)
+        df['percentoff'] = 100 - ((df.saleprice / df.oldprice) * 100)
+        df = df.sort_values(by=['percentoff'], ascending=False)
+        print(df.to_string())
+
 
 
 bot = Session()
