@@ -57,7 +57,7 @@ class Session(object):
 
     def findnexturl(self, nextbut, goto=False):
         urlpart = nextbut['href']
-        print(urlpart)
+        # print(urlpart)
         self.url = 'https://www.amazon.co.uk' + urlpart
         print(self.url)
         if goto:
@@ -83,13 +83,14 @@ class Session(object):
             except:
                 oldprice = float(item.find('span', {'class': 'a-offscreen'}).text.replace('£','').replace(',','').strip())
             try:
-                reviews = item.find('span', {'class': 'a-size-base s-underline-text'}).text.strip()
+                reviews = item.find('span', {'class': 'a-size-base s-light-weight-text'}).text.strip()
+                print('found review')
             except:
                 reviews = 0
             try:
                 stars = item.find('a', {'class': 'a-popover-trigger a-declarative'}).text.strip()
             except:
-                stars = 'No ratings'
+                stars = 'No rating'
             saleitem = {
                 'title': title,
                 'short_title': short_title,
@@ -105,6 +106,8 @@ class Session(object):
         return
     def sortresults(self):
         df = pd.DataFrame(dealslist)
+        df = df.loc[df['stars'] != 'No rating']
+        print(df.dtypes)
         df['percentoff'] = 100 - ((df.saleprice / df.oldprice) * 100)
         df = df.sort_values(by=['percentoff'], ascending=False)
         print(tabulate(df, headers='keys'))
