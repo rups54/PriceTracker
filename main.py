@@ -47,7 +47,7 @@ class Session(object):
             nextbut = self.soup.find('a', {'class': 's-pagination-item s-pagination-next s-pagination-button s-pagination-separator'})
             if nextbut is not None:
                 print('whoop next button is avail')
-                self.findnexturl(nextbut, True)
+                self.findnexturl(nextbut)
             elif nextbut is None:
                 print('next button isnt available')
                 print('going to sort out results')
@@ -62,6 +62,8 @@ class Session(object):
         print(self.url)
         if goto:
             self.getdata(self.url)
+        else:
+            self.sortresults()
 
     def getdeals(self):
         print('getting deals')
@@ -71,7 +73,7 @@ class Session(object):
         pricecount = 0
         for item in products:
             title = item.find('a', {'class': 'a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal'}).text.strip()
-            short_title = item.find('a', {'class': 'a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal'}).text.strip()[:30]
+            short_title = item.find('a', {'class': 'a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal'}).text.strip()[:55]
             try:
                 saleprice = float(item.find_all('span', {'class': 'a-offscreen'})[0].text.replace('£','').replace(',','').strip())
                 pricecount +=1
@@ -83,16 +85,15 @@ class Session(object):
             except:
                 oldprice = float(item.find('span', {'class': 'a-offscreen'}).text.replace('£','').replace(',','').strip())
             try:
-                reviews = item.find('span', {'class': 'a-size-base s-light-weight-text'}).text.strip()
-                print('found review')
+                reviews = item.find('span', {'class': 'a-size-base s-underline-text'}).text.strip()
             except:
-                reviews = 0
+                continue
             try:
                 stars = item.find('a', {'class': 'a-popover-trigger a-declarative'}).text.strip()
             except:
-                stars = 'No rating'
+                continue
             saleitem = {
-                'title': title,
+                #'title': title,
                 'short_title': short_title,
                 'saleprice': saleprice,
                 'oldprice': oldprice,
