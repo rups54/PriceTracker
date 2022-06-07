@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import argparse
 from tabulate import tabulate
+import webbrowser
 
 
 # #Comment out these 3 lines and change the searchterm variable, if you do not wish to use argparse version
@@ -18,7 +19,7 @@ s = HTMLSession()
 dealslist =[]
 
 #url = 'https://www.amazon.co.uk/s?k=bin&i=black-friday'
-url = 'https://www.amazon.co.uk/s?k=racing+simulator&crid=1WTSID86FSEHB&sprefix=racing+simulator%2Caps%2C128&ref=nb_sb_noss_2'
+url = 'https://www.amazon.co.uk/s?k=drill+brushes+for+cleaning&crid=B2QFYUR0AGV4&sprefix=drill+%2Caps%2C82&ref=nb_sb_ss_ts-doa-p_5_6'
 
 class Session(object):
     def __init__(self):
@@ -47,7 +48,7 @@ class Session(object):
             nextbut = self.soup.find('a', {'class': 's-pagination-item s-pagination-next s-pagination-button s-pagination-separator'})
             if nextbut is not None:
                 print('whoop next button is avail')
-                self.findnexturl(nextbut)
+                self.findnexturl(nextbut) ########## change here to run one page
             elif nextbut is None:
                 print('next button isnt available')
                 print('going to sort out results')
@@ -74,6 +75,9 @@ class Session(object):
         for item in products:
             title = item.find('a', {'class': 'a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal'}).text.strip()
             short_title = item.find('a', {'class': 'a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal'}).text.strip()[:55]
+            link = item.find('a', {'class': 'a-link-normal s-no-outline'})['href']
+            image = item.find('img', {'class': 's-image'})['src']
+            hyperimg = self.gethyperlink(link, image)
             try:
                 saleprice = float(item.find_all('span', {'class': 'a-offscreen'})[0].text.replace('£','').replace(',','').strip())
                 pricecount +=1
@@ -93,8 +97,9 @@ class Session(object):
             except:
                 continue
             saleitem = {
-                #'title': title,
-                'short_title': short_title,
+                'image': hyperimg,
+                'title': title,
+                #'short_title': short_title,
                 'saleprice': saleprice,
                 'oldprice': oldprice,
                 'reviews': reviews,
@@ -105,6 +110,15 @@ class Session(object):
         print(len(dealslist))
         self.checkpage()
         return
+    def gethyperlink(self, link, image):
+        hlink = '<a href="https://www.amazon.co.uk/' + link + '">'
+        imagesrc = '<img src="' + image + '" width="250" >'
+        hyperlink = hlink+imagesrc
+        return hyperlink
+
+        #<a href="https://geeksforgeeks.org">
+       # <img src=
+#"https://media.geeksforgeeks.org/wp-content/uploads/geeksforgeeks-13.png">
     def sortresults(self):
         df = pd.DataFrame(dealslist)
         df = df.loc[df['stars'] != 'No rating']
@@ -112,6 +126,10 @@ class Session(object):
         df['percentoff'] = 100 - ((df.saleprice / df.oldprice) * 100)
         df = df.sort_values(by=['percentoff'], ascending=False)
         print(tabulate(df, headers='keys'))
+        HTML = df.to_html('rups.html', escape=False)
+        print(HTML)
+        webbrowser.open('rups.html', new=2)
+
 
 
 
